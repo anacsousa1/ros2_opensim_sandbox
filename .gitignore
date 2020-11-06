@@ -1,0 +1,6 @@
+build/
+install/
+log/
+
+
+.travis_opensim.yml
