@@ -3,7 +3,7 @@
 # To learn about this file, go to https://docs.travis-ci.com/user/languages/minimal-and-generic/
 language: generic
 
-sudo: required
+# sudo: required
 cache:
   - apt
 # cache: ccache
