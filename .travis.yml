@@ -76,6 +76,7 @@ before_install:
   
   # Trying to solve "no implicit conversion of nil into String when logging in"
   gem install travis -v 1.8.8 --no-rdoc --no-ri
+  
 
   # #################### OpenSim:
   # - cmake --version # To help debug any cmake-related issues.
