@@ -172,10 +172,10 @@ before_install:
   # - colcon build
   # - . install/setup.bash
 
-deploy:
-  provider: script
-  # skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
-  github-token: $GITHUB_TOKEN
-  on:
-      branch: master
+# deploy:
+#   provider: script
+#   # skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
+#   github-token: $GITHUB_TOKEN
+#   on:
+#       branch: master
 
