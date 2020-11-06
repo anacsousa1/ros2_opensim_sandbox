@@ -76,7 +76,7 @@ before_install:
   
   # Trying to solve "no implicit conversion of nil into String when logging in"
   gem install travis -v 1.8.8 --no-rdoc --no-ri
-  
+
 
   # #################### OpenSim:
   # - cmake --version # To help debug any cmake-related issues.
@@ -158,22 +158,22 @@ before_install:
 
 
   # #################### ROS2:
-  - sudo locale-gen en_US en_US.UTF-8
-  - sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-  - export LANG=en_US.UTF-8
-  - sudo apt install curl gnupg2 lsb-release
-  - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
-  - sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
-  - sudo apt update
-  - sudo apt install ros-foxy-desktop
-  - sudo apt install python3-colcon-common-extensions
-  - source /opt/ros/foxy/setup.bash
-  - colcon build
-  - . install/setup.bash
+  # - sudo locale-gen en_US en_US.UTF-8
+  # - sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+  # - export LANG=en_US.UTF-8
+  # - sudo apt install curl gnupg2 lsb-release
+  # - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+  # - sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
+  # - sudo apt update
+  # - sudo apt install ros-foxy-desktop
+  # - sudo apt install python3-colcon-common-extensions
+  # - source /opt/ros/foxy/setup.bash
+  # - colcon build
+  # - . install/setup.bash
 
 deploy:
   provider: script
-  skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
+  # skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
   github-token: $GITHUB_TOKEN
   on:
       branch: master
