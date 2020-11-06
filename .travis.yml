@@ -168,8 +168,9 @@ before_install:
   # - . install/setup.bash
 
 deploy:
-  # provider: script
+  provider: script
   skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
-  # github-token: $GITHUB_TOKEN
-
+  github-token: $GITHUB_TOKEN
+  on:
+      branch: master
 
