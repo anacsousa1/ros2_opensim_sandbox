@@ -74,7 +74,8 @@ before_install:
   # Stop build if comment contains [skip travis].
   - if $(git log -n1 --format="%B" | grep --quiet '\[skip travis\]'); then exit; fi 
   
-  # Trying to solve "no implicit conversion of nil into String when logging in"
+  ## Trying to solve "no implicit conversion of nil into String when logging in"
+  # https://github.com/travis-ci/travis.rb/issues/190
   gem install travis -v 1.8.8 --no-rdoc --no-ri
 
 
