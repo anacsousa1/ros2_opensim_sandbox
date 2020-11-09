@@ -1,6 +1,7 @@
 # This script is used by the Travis-CI (continuous integration) testing
 # service to run Biospine tests with every GitHub push or pull-request.
 # To learn about this file, go to https://docs.travis-ci.com/user/languages/minimal-and-generic/
+# To test if this file compiles, go to http://www.yamllint.com/
 language: generic
 
 # sudo: required
@@ -76,7 +77,7 @@ before_install:
   
   ## Trying to solve "no implicit conversion of nil into String when logging in"
   # https://github.com/travis-ci/travis.rb/issues/190
-  # gem install travis -v 1.8.8 --no-rdoc --no-ri
+  # gem install travis -v 1.8.8 --no-rdoc --no-ri # this line is not working in travis
 
 
   # #################### OpenSim:
@@ -172,10 +173,10 @@ before_install:
   # - colcon build
   # - . install/setup.bash
 
-# deploy:
-#   provider: script
-#   # skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
-#   github-token: $GITHUB_TOKEN
-#   on:
-#       branch: master
+deploy:
+  provider: script
+  skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
+  github-token: $GITHUB_TOKEN
+  on:
+      branch: master
 
