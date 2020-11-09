@@ -9,7 +9,7 @@ public:
         numberSubscriber_ = this->create_subscription<example_interfaces::msg::Int64>( // Change type
             "/data/number", 10,     // Change topic
             std::bind(&SubNode::numberCallback, this, std::placeholders::_1));
-        RCLCPP_INFO(this->get_logger(), "Sub node has been started!"); // Change 'Sub node'
+        RCLCPP_INFO(this->get_logger(), "Sub node has been started."); // Change 'Sub node'
     }
 
 private:
