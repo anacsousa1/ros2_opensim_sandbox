@@ -173,7 +173,6 @@ before_install:
 
 deploy:
   provider: script
-  skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
   script: bash deploy.sh # correct way to call deploy.sh (see: https://stackoverflow.com/questions/50058931/travis-failed-with-status-code-127)
   # github-token: $GITHUB_TOKEN
   on:
