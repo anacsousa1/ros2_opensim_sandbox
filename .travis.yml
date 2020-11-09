@@ -159,24 +159,24 @@ before_install:
   # - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew cleanup; rm -rf "`brew cache`"; fi
 
 
-  # #################### ROS2:
-  # - sudo locale-gen en_US en_US.UTF-8
-  # - sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-  # - export LANG=en_US.UTF-8
-  # - sudo apt install curl gnupg2 lsb-release
-  # - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
-  # - sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
-  # - sudo apt update
-  # - sudo apt install ros-foxy-desktop
-  # - sudo apt install python3-colcon-common-extensions
-  # - source /opt/ros/foxy/setup.bash
-  # - colcon build
-  # - . install/setup.bash
+  #################### ROS2:
+  - sudo locale-gen en_US en_US.UTF-8
+  - sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+  - export LANG=en_US.UTF-8
+  - sudo apt install curl gnupg2 lsb-release
+  - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+  - sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
+  - sudo apt update
+  - sudo apt install ros-foxy-desktop
+  - sudo apt install python3-colcon-common-extensions
+  - source /opt/ros/foxy/setup.bash
+  - colcon build
+  - . install/setup.bash
 
 deploy:
   provider: script
   skip_cleanup: true # prevent Travis from resetting your working directory and deleting all changes made during the build
-  script: bash deploy.sh # calls deploy.sh
+  script: bash deploy.sh # correct way to call deploy.sh (see: https://stackoverflow.com/questions/50058931/travis-failed-with-status-code-127)
   # github-token: $GITHUB_TOKEN
   on:
       branch: master
