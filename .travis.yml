@@ -1,15 +1,13 @@
 # This script is used by the Travis-CI (continuous integration) testing
-# service to run Biospine tests with every GitHub push or pull-request.
+# service to run ROS2 + OpenSim tests with every GitHub push or pull-request.
 # To learn about this file, go to https://docs.travis-ci.com/user/languages/minimal-and-generic/
 # To test if this file compiles, go to http://www.yamllint.com/
 language: generic
-
-# sudo: required
 cache:
   - apt
-# cache: ccache
 os: linux
 dist: focal   # Focal = Ubuntu 20.04 LST
+# cache: ccache
 
 # Whitelist for travis
 branches:
