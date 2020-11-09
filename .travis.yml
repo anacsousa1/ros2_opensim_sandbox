@@ -76,7 +76,7 @@ before_install:
   
   ## Trying to solve "no implicit conversion of nil into String when logging in"
   # https://github.com/travis-ci/travis.rb/issues/190
-  gem install travis -v 1.8.8 --no-rdoc --no-ri
+  # gem install travis -v 1.8.8 --no-rdoc --no-ri
 
 
   # #################### OpenSim:
