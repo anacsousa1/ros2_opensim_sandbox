@@ -15,19 +15,16 @@ branches:
     - master
     - develop
 
-# Define global variables (for OpenSim installation)
-env:
+env: # Define global variables (for OpenSim installation)
   global:
-    # The python tests look for OPENSIM_HOME.
-    - OPENSIM_HOME=~/opensim-core
+    - OPENSIM_HOME=~/opensim-core # The python tests look for OPENSIM_HOME.
     - OPENSIM_DEPENDENCIES_BUILD_DIR=~/opensim_dependencies-build
     - OPENSIM_DEPENDENCIES_INSTALL_DIR=~/opensim_dependencies-install
     - SWIG_VER=3.0.8
     - PATH="$PATH:$TRAVIS_BUILD_DIR/.github"
     - USE_CCACHE=1
-    - CCACHE_COMPRESS=1
-    # For Clang to work with ccache.
-    - CCACHE_CPP2=1
+    - CCACHE_COMPRESS=1    
+    - CCACHE_CPP2=1 # For Clang to work with ccache.
     - BTYPE=Release
     - WRAP=on
     - DOXY=off
@@ -36,46 +33,29 @@ env:
 addons:
   apt:
     sources:
-      # For gcc >= 4.8:
-      - ubuntu-toolchain-r-test
-      # For clang:
-      - llvm-toolchain-precise-3.5
-      # For cmake >= 2.8.8 (for CMakePackageConfigHelpers):
-      - kubuntu-backports
+      - ubuntu-toolchain-r-test # For gcc >= 4.8
+      - llvm-toolchain-precise-3.5 # For clang:      
+      - kubuntu-backports # For cmake >= 2.8.8 (for CMakePackageConfigHelpers)
       - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
 
     packages:
-      # Must explicitly list cmake-data, otherwise the incorrect version of
-      # cmake-data will be sought to satisfy the dependencies of cmake:
+      # Must explicitly list cmake-data
       - cmake-data
       - cmake
-      # For Simbody:
-      - liblapack-dev
-      # - g++-4.9   # Ubuntu focal already comes with g++ 9.3
-      # - clang-3.5 # Ubuntu focal already comes with clang 10.0
-      # In case someone wants to check for memory leaks.
-      - valgrind
-      # To build doxygen documentation.
-      # TOO OLD; see below. - doxygen
-      # python3 as linux and osx are still on python2
-      - python3
+      - liblapack-dev # For Simbody      
+      - valgrind # In case someone wants to check for memory leaks.
+      - python3 # python3 as linux and osx are still on python2
       - python3-pip
-      - python3-numpy
-  # To avoid being prompted when ssh'ing into sourceforge.
-  ssh_known_hosts:
-      # For uploading doxygen:
-      - web.sourceforge.net
-      # For deleting old doxygen:
-      - shell.sourceforge.net
-      # For uploading binaries:
-      - frs.sourceforge.net
+      - python3-numpy  
+  ssh_known_hosts: # To avoid being prompted when ssh'ing into sourceforge
+      - web.sourceforge.net # For uploading doxygen
+      - shell.sourceforge.net # For deleting old doxygen
+      - frs.sourceforge.net # For uploading binaries
 
 before_install:
   - echo $TRAVIS_OS_NAME
-  # OpenSim:
-  - cd $TRAVIS_BUILD_DIR
-  # Stop build if comment contains [skip travis].
-  - if $(git log -n1 --format="%B" | grep --quiet '\[skip travis\]'); then exit; fi
+  - cd $TRAVIS_BUILD_DIR  
+  - if $(git log -n1 --format="%B" | grep --quiet '\[skip travis\]'); then exit; fi # Stop build if comment contains [skip travis].
   - cmake --version # To help debug any cmake-related issues.
   # Avoid "Homebrew must be run under Ruby 2.3!": https://github.com/PowerShell/PowerShell/issues/5062
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
@@ -118,7 +98,6 @@ before_install:
   ## Install Simbody.
   # The Simbody travis script uploads the simbody binaries to sourceforge.
   - SIMBODYZIP=simbody-latest_${TRAVIS_OS_NAME}_${BTYPE}.zip
-
   - wget https://prdownloads.sourceforge.net/myosin/simbody/$SIMBODYZIP
   # Put Simbody in ~/simbody (-q: quiet).
   - unzip -q $SIMBODYZIP -d ~
@@ -139,19 +118,16 @@ before_install:
   - export TESTS_TO_EXCLUDE="unmatched" # This is just for the regex.
   ## If we are building in debug, there are some tests to ignore.
   - if [ "$BTYPE" = "Debug" ]; then export TESTS_TO_EXCLUDE="$TESTS_TO_EXCLUDE|testOptimizationExample|testCMCGait10dof18musc|testCMCWithControlConstraintsRunningModel"; fi
-  ## Set compiler flags.
-  - export CXX_FLAGS="-Werror " # -Wno-tautological-undefined-compare -Wno-undefined-bool-conversion"
-  #- if [ "$TRAVIS_OS_NAME" = "osx" ]; then export CXX_FLAGS="$CXX_FLAGS -Wno-inconsistent-missing-override"; fi;
+  - export CXX_FLAGS="-Werror " #  -Wno-tautological-undefined-compare -Wno-undefined-bool-conversion" ## Set compiler flags.
   # Run superbuild to download, configure, build and install dependencies.
   - mkdir $OPENSIM_DEPENDENCIES_BUILD_DIR
   - cd $OPENSIM_DEPENDENCIES_BUILD_DIR
-  - DEP_CMAKE_ARGS=($TRAVIS_BUILD_DIR/dependencies -DCMAKE_INSTALL_PREFIX=$OPENSIM_DEPENDENCIES_INSTALL_DIR -DCMAKE_BUILD_TYPE=$BTYPE -DSUPERBUILD_simbody=OFF -DSUPERBUILD_ezc3d=ON)
+  - DEP_CMAKE_ARGS=($TRAVIS_BUILD_DIR/opensim-core/dependencies -DCMAKE_INSTALL_PREFIX=$OPENSIM_DEPENDENCIES_INSTALL_DIR -DCMAKE_BUILD_TYPE=$BTYPE -DSUPERBUILD_simbody=OFF -DSUPERBUILD_ezc3d=ON)
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then DEP_CMAKE_ARGS+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=$OSX_TARGET); fi
   - printf '%s\n' "${DEP_CMAKE_ARGS[@]}"
   - cmake "${DEP_CMAKE_ARGS[@]}"
   - make -j8
-  # Force some cleanup of homebrew cache so we do not exceed availabe disk space
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew cleanup; rm -rf "`brew cache`"; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew cleanup; rm -rf "`brew cache`"; fi # Force some cleanup of homebrew cache so we do not exceed availabe disk space
 
 install:
   #############################################################################
