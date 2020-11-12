@@ -68,6 +68,7 @@ addons:
       - frs.sourceforge.net
 
 before_install:
+  - echo $TRAVIS_OS_NAME
   # OpenSim:
   - cd $TRAVIS_BUILD_DIR
   # Stop build if comment contains [skip travis].
