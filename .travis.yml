@@ -16,18 +16,18 @@ branches:
     - develop
 
 # Define global variables (for OpenSim installation)
-# env:
-#   global:
-#     # The python tests look for OPENSIM_HOME.
-#     - OPENSIM_HOME=~/opensim-core
-#     - OPENSIM_DEPENDENCIES_BUILD_DIR=~/opensim_dependencies-build
-#     - OPENSIM_DEPENDENCIES_INSTALL_DIR=~/opensim_dependencies-install
-#     - SWIG_VER=3.0.8
-#     - PATH="$PATH:$TRAVIS_BUILD_DIR/.github"
-#     - USE_CCACHE=1
-#     - CCACHE_COMPRESS=1
-#     # For Clang to work with ccache.
-#     - CCACHE_CPP2=1
+env:
+  global:
+    # The python tests look for OPENSIM_HOME.
+    - OPENSIM_HOME=~/opensim-core
+    - OPENSIM_DEPENDENCIES_BUILD_DIR=~/opensim_dependencies-build
+    - OPENSIM_DEPENDENCIES_INSTALL_DIR=~/opensim_dependencies-install
+    - SWIG_VER=3.0.8
+    - PATH="$PATH:$TRAVIS_BUILD_DIR/.github"
+    - USE_CCACHE=1
+    - CCACHE_COMPRESS=1
+    # For Clang to work with ccache.
+    - CCACHE_CPP2=1
 
 # Dependencies on linux (for OpenSim installation)
 addons:
@@ -67,11 +67,117 @@ addons:
       # For uploading binaries:
       - frs.sourceforge.net
 
-# Setup and install ros2
 before_install:
+  # OpenSim:
   - cd $TRAVIS_BUILD_DIR
   # Stop build if comment contains [skip travis].
   - if $(git log -n1 --format="%B" | grep --quiet '\[skip travis\]'); then exit; fi
+  - cmake --version # To help debug any cmake-related issues.
+  # Avoid "Homebrew must be run under Ruby 2.3!": https://github.com/PowerShell/PowerShell/issues/5062
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  ## Ensure that there are no tabs in source code.
+  # GREP returns 0 (true) if there are any matches, and
+  # we don't want any matches. If there are matches,
+  # print a helpful message, and make the test fail by using "false".
+  # The GREP command here checks for any tab characters in the the files
+  # that match the specified pattern. GREP does not pick up explicit tabs
+  # (e.g., literally a \t in a source file).
+  - cd $TRAVIS_BUILD_DIR
+  - if grep --line-num --recursive --exclude-dir="*dependencies*" --include={CMakeLists.txt,*.cpp,*.c,*.h} -P "\t" . ; then echo "Tabs found in the lines shown above. See CONTRIBUTING.md about tabs."; false; fi
+  ## Set up environment variables.
+  # Only if compiling with gcc, update environment variables to use the new
+  # gcc.
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+  - if [[ "$TRAVIS_OS_NAME" = "linux" && "$CXX" = "clang++" ]]; then export CXX="clang++-3.5" CC="clang-3.5"; fi
+  ## Set up ccache.
+  # Lots of this is borrowed from https://github.com/weitjong/Urho3D/blob/master/.travis.yml.
+  # Since we install our own Clang, it's not set up for ccache. Workaround:
+  - if [[ "$TRAVIS_OS_NAME" = "linux" && $CXX = *clang* ]]; then ln -s $(which ccache) $HOME/clang-3.5 && ln -s $(which ccache) $HOME/clang++-3.5 && export PATH=$HOME:$PATH; fi
+  # Without the following lines, ccache causes clang to not print in color.
+  - if [[ "$CC" = *clang* ]]; then export CC="$CC -fcolor-diagnostics"; fi;
+  - if [[ "$CXX" = *clang* ]]; then export CXX="$CXX -fcolor-diagnostics"; fi;
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install ccache; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then PATH=/usr/local/opt/ccache/libexec:$PATH; fi
+  ## Temporary hack to find libblas and liblapack.
+  # TODO. Currently Simbody is using Travis CI's Ubuntu 14.04 VMs, which link with 
+  # liblapack.so.3 and libblas.so.3. These files don't exist on the 12.04 machines.
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then mkdir ~/lib; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ln -s /usr/lib/liblapack.so ~/lib/liblapack.so.3; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ln -s /usr/lib/libblas.so ~/lib/libblas.so.3; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/lib; fi
+  ## Doxygen.
+  # Need a doxygen that is more recent than that available through apt-get.
+  - if [[ "$DOXY" = "on" && "$TRAVIS_OS_NAME" = "linux" ]]; then mkdir ~/doxygen && cd ~/doxygen; fi
+  - if [[ "$DOXY" = "on" && "$TRAVIS_OS_NAME" = "linux" ]]; then wget https://sourceforge.net/projects/doxygen/files/rel-1.8.10/doxygen-1.8.10.linux.bin.tar.gz; fi
+  - if [[ "$DOXY" = "on" && "$TRAVIS_OS_NAME" = "linux" ]]; then tar xzf doxygen-1.8.10.linux.bin.tar.gz; fi
+  - if [[ "$DOXY" = "on" && "$TRAVIS_OS_NAME" = "osx" ]]; then brew install doxygen; fi
+  ## Install Simbody.
+  # The Simbody travis script uploads the simbody binaries to sourceforge.
+  - SIMBODYZIP=simbody-latest_${TRAVIS_OS_NAME}_${BTYPE}.zip
+  - wget https://prdownloads.sourceforge.net/myosin/simbody/$SIMBODYZIP
+  # Put Simbody in ~/simbody (-q: quiet).
+  - unzip -q $SIMBODYZIP -d ~
+  ## Install SWIG to build Java/python wrapping.
+  # - if [[ "$WRAP" = "on" ]]; then if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install pcre; fi; fi
+  - if [[ "$WRAP" = "on" ]]; then mkdir ~/swig-source && cd ~/swig-source; fi
+  - if [[ "$WRAP" = "on" ]]; then wget https://github.com/swig/swig/archive/rel-$SWIG_VER.tar.gz; fi
+  #- wget http://prdownloads.sourceforge.net/swig/$SWIG.tar.gz
+  - if [[ "$WRAP" = "on" ]]; then tar xzf rel-$SWIG_VER.tar.gz && cd swig-rel-$SWIG_VER; fi
+  - if [[ "$WRAP" = "on" ]]; then sh autogen.sh && ./configure --prefix=$HOME/swig --disable-ccache && make && make -j8 install; fi
+  #- ./configure --prefix=$HOME/swig && make && make -j8 install
+  ## Detect if we should check memory leaks with valgrind.
+  - cd $TRAVIS_BUILD_DIR
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then git log --format=%B --no-merges -n 1 | grep '\[ci valgrind\]'; export RUN_VALGRIND=$?; true; fi
+  - if [ $RUN_VALGRIND = "0" ]; then export CTEST_FLAGS="-D ExperimentalMemCheck"; fi
+    ## Decide which tests to exclude, based on platform, configuration, etc.
+  # Initialize environment variable.
+  - export TESTS_TO_EXCLUDE="unmatched" # This is just for the regex.
+  ## If we are building in debug, there are some tests to ignore.
+  - if [ "$BTYPE" = "Debug" ]; then export TESTS_TO_EXCLUDE="$TESTS_TO_EXCLUDE|testOptimizationExample|testCMCGait10dof18musc|testCMCWithControlConstraintsRunningModel"; fi
+  ## Set compiler flags.
+  - export CXX_FLAGS="-Werror " # -Wno-tautological-undefined-compare -Wno-undefined-bool-conversion"
+  #- if [ "$TRAVIS_OS_NAME" = "osx" ]; then export CXX_FLAGS="$CXX_FLAGS -Wno-inconsistent-missing-override"; fi;
+  # Run superbuild to download, configure, build and install dependencies.
+  - mkdir $OPENSIM_DEPENDENCIES_BUILD_DIR
+  - cd $OPENSIM_DEPENDENCIES_BUILD_DIR
+  - DEP_CMAKE_ARGS=($TRAVIS_BUILD_DIR/dependencies -DCMAKE_INSTALL_PREFIX=$OPENSIM_DEPENDENCIES_INSTALL_DIR -DCMAKE_BUILD_TYPE=$BTYPE -DSUPERBUILD_simbody=OFF -DSUPERBUILD_ezc3d=ON)
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then DEP_CMAKE_ARGS+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=$OSX_TARGET); fi
+  - printf '%s\n' "${DEP_CMAKE_ARGS[@]}"
+  - cmake "${DEP_CMAKE_ARGS[@]}"
+  - make -j8
+  # Force some cleanup of homebrew cache so we do not exceed availabe disk space
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew cleanup; rm -rf "`brew cache`"; fi
+
+install:
+  #############################################################################
+  # Configure OpenSim.
+  #############################################################################
+  - mkdir ~/opensim-core-build && cd ~/opensim-core-build
+  ## Store CMake arguments in bash array: https://stackoverflow.com/questions/1951506/add-a-new-element-to-an-array-without-specifying-the-index-in-bash
+  - OSIM_CMAKE_ARGS=($TRAVIS_BUILD_DIR -DCMAKE_INSTALL_PREFIX=$OPENSIM_HOME -DCMAKE_BUILD_TYPE=$BTYPE -DCMAKE_CXX_FLAGS="$CXX_FLAGS")
+  # The deployed binaries are used by the GUI, which requires the non-FHS layout.
+  - OSIM_CMAKE_ARGS+=(-DOPENSIM_INSTALL_UNIX_FHS=OFF)
+  # The minimum macOS/OSX version we support.
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then OSIM_CMAKE_ARGS+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=$OSX_TARGET); fi  
+  # Dependencies.
+  - OSIM_CMAKE_ARGS+=(-DSIMBODY_HOME=~/simbody -DOPENSIM_DEPENDENCIES_DIR=$OPENSIM_DEPENDENCIES_INSTALL_DIR -DOPENSIM_C3D_PARSER=ezc3d)
+  # Build applications
+  - OSIM_CMAKE_ARGS+=(-DOPENSIM_BUILD_INDIVIDUAL_APPS=ON)
+  # Bindings.
+  - OSIM_CMAKE_ARGS+=(-DBUILD_PYTHON_WRAPPING=$WRAP -DBUILD_JAVA_WRAPPING=$WRAP -DSWIG_EXECUTABLE=$HOME/swig/bin/swig)
+  # Doxygen.
+  - OSIM_CMAKE_ARGS+=(-DOPENSIM_DOXYGEN_USE_MATHJAX=off -DOPENSIM_SIMBODY_DOXYGEN_LOCATION="https://simtk.org/api_docs/simbody/latest/")
+  - if [[ "$DOXY" = "on" && "$TRAVIS_OS_NAME" = "linux" ]]; then OSIM_CMAKE_ARGS+=(-DDOXYGEN_EXECUTABLE=$HOME/doxygen/doxygen-1.8.10/bin/doxygen); fi  
+  - printf '%s\n' "${OSIM_CMAKE_ARGS[@]}"
+  - cmake "${OSIM_CMAKE_ARGS[@]}"
+  #############################################################################
+  # Build OpenSim.
+  #############################################################################
+  # Build java and python C++ wrapper separately to avoid going over the memory limit.
+  # On OSX, building the bindings separately slows down the build too much.
+  - if [[ "$WRAP" = "on" && "$TRAVIS_OS_NAME" = "linux" ]]; then make -j$NPROC osimTools osimJavaJNI PythonBindings; fi
+  # Build whatever remains (at least _opensim, tests and examples).
+  - make -j$NPROC;
 
   #################### ROS2:
   # - sudo locale-gen en_US en_US.UTF-8
@@ -87,26 +193,26 @@ before_install:
   # - colcon build
   # - . install/setup.bash
     #################### OpenSim:
-  - cd ..
-  - sudo apt-get update
-  - sudo apt-get --yes install -y swig3.0 git cmake cmake-curses-gui
-  - sudo apt-get --yes install  freeglut3-dev libxi-dev libxmu-dev liblapack-dev swig python-dev openjdk-8-jdk
-  - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-  - git clone https://github.com/opensim-org/opensim-core.git
-  - mkdir opensim_dependencies_build
-  - cd opensim_dependencies_build
-  - cmake ../opensim-core/dependencies/ -DCMAKE_INSTALL_PREFIX='~/opensim_dependencies_install' -DCMAKE_BUILD_TYPE=RelWithDebInfo
-  - make -j8
-  - cd ..
-  - mkdir opensim_build
-  - cd opensim_build
-  - cmake ../opensim-core -DCMAKE_INSTALL_PREFIX="~/opensim_install" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENSIM_DEPENDENCIES_DIR="~/opensim_dependencies_install" -DBUILD_PYTHON_WRAPPING=ON -DBUILD_JAVA_WRAPPING=OFF  -DWITH_BTK=ON
-  - make -j2
-  - ctest -j2
-  - make -j2 install
-  - cd /opensim-core/lib/python3.6/site-packages
-  - sudo python3 setup.py install
-  - cd ..
+  # - cd ..
+  # - sudo apt-get update
+  # - sudo apt-get --yes install -y swig3.0 git cmake cmake-curses-gui
+  # - sudo apt-get --yes install  freeglut3-dev libxi-dev libxmu-dev liblapack-dev swig python-dev openjdk-8-jdk
+  # - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+  # - git clone https://github.com/opensim-org/opensim-core.git
+  # - mkdir opensim_dependencies_build
+  # - cd opensim_dependencies_build
+  # - cmake ../opensim-core/dependencies/ -DCMAKE_INSTALL_PREFIX='~/opensim_dependencies_install' -DCMAKE_BUILD_TYPE=RelWithDebInfo
+  # - make -j8
+  # - cd ..
+  # - mkdir opensim_build
+  # - cd opensim_build
+  # - cmake ../opensim-core -DCMAKE_INSTALL_PREFIX="~/opensim_install" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENSIM_DEPENDENCIES_DIR="~/opensim_dependencies_install" -DBUILD_PYTHON_WRAPPING=ON -DBUILD_JAVA_WRAPPING=OFF  -DWITH_BTK=ON
+  # - make -j2
+  # - ctest -j2
+  # - make -j2 install
+  # - cd /opensim-core/lib/python3.6/site-packages
+  # - sudo python3 setup.py install
+  # - cd ..
   
 
 deploy:
