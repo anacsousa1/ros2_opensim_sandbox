@@ -74,25 +74,48 @@ before_install:
   - if $(git log -n1 --format="%B" | grep --quiet '\[skip travis\]'); then exit; fi
 
   #################### ROS2:
-  - sudo locale-gen en_US en_US.UTF-8
-  - sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-  - export LANG=en_US.UTF-8
-  - sudo apt install curl gnupg2 lsb-release
-  - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
-  - sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
-  - sudo apt update
-  - sudo apt install ros-foxy-desktop
-  - sudo apt install python3-colcon-common-extensions
-  - source /opt/ros/foxy/setup.bash
-  - colcon build
-  - . install/setup.bash
+  # - sudo locale-gen en_US en_US.UTF-8
+  # - sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+  # - export LANG=en_US.UTF-8
+  # - sudo apt install curl gnupg2 lsb-release
+  # - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+  # - sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
+  # - sudo apt update
+  # - sudo apt install ros-foxy-desktop
+  # - sudo apt install python3-colcon-common-extensions
+  # - source /opt/ros/foxy/setup.bash
+  # - colcon build
+  # - . install/setup.bash
     #################### OpenSim:
+  - cd ..
   - sudo apt-get update
-  - sudo apt-get --yes install -y swig3.0
-  - sudo apt-get --yes install git cmake cmake-curses-gui \
-                           freeglut3-dev libxi-dev libxmu-dev \
-                           liblapack-dev swig python-dev \
-                           openjdk-8-jdk
+  - sudo apt-get --yes install -y swig3.0 git cmake cmake-curses-gui
+  - sudo apt-get --yes install  freeglut3-dev libxi-dev libxmu-dev liblapack-dev swig python-dev openjdk-8-jdk
+  - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+  - git clone https://github.com/opensim-org/opensim-core.git
+  - mkdir opensim_dependencies_build
+  - cd opensim_dependencies_build
+  - cmake ../opensim-core/dependencies/ \
+      -DCMAKE_INSTALL_PREFIX='~/opensim_dependencies_install' \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo
+  - make -j8
+  - cd ..
+  - mkdir opensim_build
+  - cd opensim_build
+  - cmake ../opensim-core \
+      -DCMAKE_INSTALL_PREFIX="~/opensim_install" \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DOPENSIM_DEPENDENCIES_DIR="~/opensim_dependencies_install" \
+      -DBUILD_PYTHON_WRAPPING=ON \
+      -DBUILD_JAVA_WRAPPING=OFF \
+      -DWITH_BTK=ON
+  - make -j2
+  - ctest -j2
+  - make -j2 install
+  - cd /opensim-core/lib/python3.6/site-packages
+  - sudo python3 setup.py install
+  - cd ..
+  
 
 deploy:
   provider: script
