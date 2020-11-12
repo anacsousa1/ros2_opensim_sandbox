@@ -28,6 +28,9 @@ env:
     - CCACHE_COMPRESS=1
     # For Clang to work with ccache.
     - CCACHE_CPP2=1
+    - BTYPE=Release
+    - WRAP=on
+    - DOXY=off
 
 # Dependencies on linux (for OpenSim installation)
 addons:
@@ -115,6 +118,7 @@ before_install:
   ## Install Simbody.
   # The Simbody travis script uploads the simbody binaries to sourceforge.
   - SIMBODYZIP=simbody-latest_${TRAVIS_OS_NAME}_${BTYPE}.zip
+
   - wget https://prdownloads.sourceforge.net/myosin/simbody/$SIMBODYZIP
   # Put Simbody in ~/simbody (-q: quiet).
   - unzip -q $SIMBODYZIP -d ~
